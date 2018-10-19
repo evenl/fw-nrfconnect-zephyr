@@ -181,9 +181,6 @@ config SPI_DW_PORT_0_CLOCK_GATE_DRV_NAME
 config SPI_DW_PORT_0_CLOCK_GATE_SUBSYS
 	default 3
 
-config SPI_0_IRQ_PRI
-	default 1
-
 config SPI_1
 	def_bool y
 
@@ -199,9 +196,6 @@ config SPI_DW_PORT_1_CLOCK_GATE_DRV_NAME
 config SPI_DW_PORT_1_CLOCK_GATE_SUBSYS
 	default 4
 
-config SPI_1_IRQ_PRI
-	default 1
-
 endif # SPI_DW
 endif # SPI
 
@@ -216,10 +210,6 @@ if WATCHDOG
 
 config WDT_QMSI
 	def_bool y
-
-config WDT_0_IRQ_PRI
-	default 0
-
 endif # WATCHDOG
 
 if DMA

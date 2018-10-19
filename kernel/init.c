@@ -35,6 +35,9 @@
 #include <stdbool.h>
 
 #define IDLE_THREAD_NAME	"idle"
+#define LOG_LEVEL CONFIG_KERNEL_LOG_LEVEL
+#include <logging/log.h>
+LOG_MODULE_REGISTER(kernel);
 
 /* boot banner items */
 #if defined(CONFIG_BOOT_DELAY) && CONFIG_BOOT_DELAY > 0
@@ -122,7 +125,7 @@ K_THREAD_STACK_DEFINE(_interrupt_stack3, CONFIG_ISR_STACK_SIZE);
 #ifdef CONFIG_SYS_CLOCK_EXISTS
 	#define initialize_timeouts() do { \
 		sys_dlist_init(&_timeout_q); \
-	} while ((0))
+	} while (false)
 #else
 	#define initialize_timeouts() do { } while ((0))
 #endif

@@ -16,7 +16,11 @@
 #include <syscall_handler.h>
 #include <device.h>
 #include <init.h>
-#include <logging/sys_log.h>
+
+#define LOG_LEVEL CONFIG_KERNEL_LOG_LEVEL
+#include <logging/log.h>
+LOG_MODULE_DECLARE(kernel);
+
 #if defined(CONFIG_NETWORKING) && defined (CONFIG_DYNAMIC_OBJECTS)
 /* Used by auto-generated obj_size_get() switch body, as we need to
  * know the size of struct net_context
@@ -74,7 +78,7 @@ extern struct _k_object *_k_object_gperf_find(void *obj);
 extern void _k_object_gperf_wordlist_foreach(_wordlist_cb_func_t func,
 					     void *context);
 
-static int node_lessthan(struct rbnode *a, struct rbnode *b);
+static bool node_lessthan(struct rbnode *a, struct rbnode *b);
 
 /*
  * Red/black tree of allocated kernel objects, for reasonably fast lookups
@@ -109,7 +113,7 @@ static size_t obj_size_get(enum k_objects otype)
 	return ret;
 }
 
-static int node_lessthan(struct rbnode *a, struct rbnode *b)
+static bool node_lessthan(struct rbnode *a, struct rbnode *b)
 {
 	return a < b;
 }
@@ -221,7 +225,7 @@ void *_impl_k_object_alloc(enum k_objects otype)
 
 	dyn_obj = z_thread_malloc(sizeof(*dyn_obj) + obj_size_get(otype));
 	if (dyn_obj == NULL) {
-		SYS_LOG_WRN("could not allocate kernel object");
+		LOG_WRN("could not allocate kernel object");
 		return NULL;
 	}
 
@@ -513,7 +517,8 @@ void k_object_access_all_grant(void *object)
 int _k_object_validate(struct _k_object *ko, enum k_objects otype,
 		       enum _obj_init_check init)
 {
-	if (unlikely(!ko || (otype != K_OBJ_ANY && ko->type != otype))) {
+	if (unlikely((ko == NULL) ||
+		(otype != K_OBJ_ANY && ko->type != otype))) {
 		return -EBADF;
 	}
 
@@ -535,6 +540,8 @@ int _k_object_validate(struct _k_object *ko, enum k_objects otype,
 		if (unlikely(ko->flags & K_OBJ_FLAG_INITIALIZED)) {
 			return -EADDRINUSE;
 		}
+	} else {
+		/* _OBJ_INIT_ANY */
 	}
 
 	return 0;

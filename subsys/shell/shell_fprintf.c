@@ -5,6 +5,7 @@
  */
 
 #include <shell/shell_fprintf.h>
+#include <shell/shell.h>
 
 #ifdef CONFIG_NEWLIB_LIBC
 typedef int (*out_func_t)(int c, void *ctx);
@@ -16,8 +17,14 @@ extern int _prf(int (*func)(), void *dest, char *format, va_list vargs);
 static int out_func(int c, void *ctx)
 {
 	const struct shell_fprintf *sh_fprintf;
+	const struct shell *shell;
 
 	sh_fprintf = (const struct shell_fprintf *)ctx;
+	shell = (const struct shell *)sh_fprintf->user_ctx;
+
+	if ((shell->shell_flag == SHELL_FLAG_OLF_CRLF) && (c == '\n')) {
+		(void)out_func('\r', ctx);
+	}
 
 	sh_fprintf->buffer[sh_fprintf->ctrl_blk->buffer_cnt] = (u8_t)c;
 	sh_fprintf->ctrl_blk->buffer_cnt++;
@@ -32,7 +39,7 @@ static int out_func(int c, void *ctx)
 void shell_fprintf_fmt(const struct shell_fprintf *sh_fprintf,
 		       const char *fmt, va_list args)
 {
-#ifndef CONFIG_NEWLIB_LIBC
+#if !defined(CONFIG_NEWLIB_LIBC) && !defined(CONFIG_ARCH_POSIX)
 	(void)_prf(out_func, (void *)sh_fprintf, (char *)fmt, args);
 #else
 	_vprintk(out_func, (void *)sh_fprintf, fmt, args);

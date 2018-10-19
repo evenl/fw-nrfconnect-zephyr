@@ -447,7 +447,7 @@ Zephyr board, and provide the following files::
     board.h
     CMakeLists.txt
     doc/
-    dts.fixup
+    dts_fixup.h
     Kconfig.board
     Kconfig.defconfig
     pinmux.c
@@ -485,7 +485,7 @@ the Zephyr tree, for example:
 
 
 
-The pathes to any Kconfig files inside the structure needs to prefixed with
+The paths to any Kconfig files inside the structure needs to prefixed with
 $(SOC_DIR) to make Kconfig aware of the location of the Kconfig files related to
 the custom SOC.
 

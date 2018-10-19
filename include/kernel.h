@@ -16,6 +16,7 @@
 #if !defined(_ASMLANGUAGE)
 #include <kernel_includes.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,7 +81,7 @@ typedef struct {
 	struct _priq_rb waitq;
 } _wait_q_t;
 
-extern int _priq_rb_lessthan(struct rbnode *a, struct rbnode *b);
+extern bool _priq_rb_lessthan(struct rbnode *a, struct rbnode *b);
 
 #define _WAIT_Q_INIT(wait_q) { { { .lessthan_fn = _priq_rb_lessthan } } }
 
@@ -99,7 +100,7 @@ typedef struct {
 #define _OBJECT_TRACING_INIT .__next = NULL,
 #else
 #define _OBJECT_TRACING_INIT
-#define _OBJECT_TRACING_NEXT_PTR(type)
+#define _OBJECT_TRACING_NEXT_PTR(type) u8_t __dummy_next[0]
 #endif
 
 #ifdef CONFIG_POLL
@@ -851,21 +852,6 @@ __syscall void k_wakeup(k_tid_t thread);
  * @req K-THREAD-013
  */
 __syscall k_tid_t k_current_get(void);
-
-/**
- * @brief Cancel thread performing a delayed start.
- *
- * This routine prevents @a thread from executing if it has not yet started
- * execution. The thread must be re-spawned before it will execute.
- *
- * @param thread ID of thread to cancel.
- *
- * @retval 0 Thread spawning canceled.
- * @retval -EINVAL Thread has already started executing.
- *
- * @deprecated This API is deprecated.  Use k_thread_abort().
- */
-__deprecated __syscall int k_thread_cancel(k_tid_t thread);
 
 /**
  * @brief Abort a thread.
@@ -1983,6 +1969,34 @@ __syscall void *k_queue_get(struct k_queue *queue, s32_t timeout);
 static inline bool k_queue_remove(struct k_queue *queue, void *data)
 {
 	return sys_sflist_find_and_remove(&queue->data_q, (sys_sfnode_t *)data);
+}
+
+/**
+ * @brief Append an element to a queue only if it's not present already.
+ *
+ * This routine appends data item to @a queue. The first 32 bits of the
+ * data item are reserved for the kernel's use. Appending elements to k_queue
+ * relies on sys_slist_is_node_in_list which is not a constant time operation.
+ *
+ * @note Can be called by ISRs
+ *
+ * @param queue Address of the queue.
+ * @param data Address of the data item.
+ *
+ * @return true if data item was added, false if not
+ */
+static inline bool k_queue_unique_append(struct k_queue *queue, void *data)
+{
+	sys_sfnode_t *test;
+
+	SYS_SFLIST_FOR_EACH_NODE(&queue->data_q, test) {
+		if (test == (sys_sfnode_t *) data) {
+			return false;
+		}
+	}
+
+	k_queue_append(queue, data);
+	return true;
 }
 
 /**
@@ -4206,9 +4220,9 @@ extern void *k_calloc(size_t nmemb, size_t size);
 /* polling API - PRIVATE */
 
 #ifdef CONFIG_POLL
-#define _INIT_OBJ_POLL_EVENT(obj) do { (obj)->poll_event = NULL; } while ((0))
+#define _INIT_OBJ_POLL_EVENT(obj) do { (obj)->poll_event = NULL; } while (false)
 #else
-#define _INIT_OBJ_POLL_EVENT(obj) do { } while ((0))
+#define _INIT_OBJ_POLL_EVENT(obj) do { } while (false)
 #endif
 
 /* private - implementation data created as needed, per-type */
@@ -4563,7 +4577,7 @@ extern void _sys_power_save_idle_exit(s32_t ticks);
 		printk("@ %s:%d:\n", __FILE__,  __LINE__); \
 		_NanoFatalErrorHandler(reason, &_default_esf); \
 		CODE_UNREACHABLE; \
-	} while (0)
+	} while (false)
 
 #endif /* _ARCH__EXCEPT */
 
@@ -4605,7 +4619,7 @@ extern void _init_static_threads(void);
 /**
  * @internal
  */
-#define _init_static_threads() do { } while ((0))
+#define _init_static_threads() do { } while (false)
 #endif
 
 /**
@@ -4802,7 +4816,7 @@ struct k_mem_partition {
 #endif	/* CONFIG_USERSPACE */
 };
 
-/* memory domian
+/* memory domain
  * Note: Always declare this structure with __kernel prefix
  */
 struct k_mem_domain {

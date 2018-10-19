@@ -16,7 +16,7 @@ inspired by Vi:
   J/K     : Down/Up
   L       : Enter menu/Toggle item
   H       : Leave menu
-  Ctrl-D/U: Page Down/Page Down
+  Ctrl-D/U: Page Down/Page Up
   G/End   : Jump to end of list
   g/Home  : Jump to beginning of list
 
@@ -90,15 +90,15 @@ The color definition is a comma separated list of attributes:
                     terminal-dependent) are ignored (with a warning). The COLOR
                     can be also specified using a RGB value in the HTML
                     notation, for example #RRGGBB. If the terminal supports
-                    color changing, the color is rendered accurately. Otherwise,
-                    the visually nearest color is used.
+                    color changing, the color is rendered accurately.
+                    Otherwise, the visually nearest color is used.
 
                     If the background or foreground color of an element is not
                     specified, it defaults to -1, representing the default
                     terminal foreground or background color.
 
-                    Note: On some terminals a bright version of the color implies
-                    bold.
+                    Note: On some terminals a bright version of the color
+                    implies bold.
     - bold          Use bold text
     - underline     Use underline text
     - standout      Standout text attribute (reverse color)
@@ -178,8 +178,8 @@ import sys
 import textwrap
 
 from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
-                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
-                       AND, OR, NOT, \
+                       BOOL, STRING, INT, HEX, UNKNOWN, \
+                       AND, OR, \
                        expr_str, expr_value, split_expr, \
                        standard_sc_expr_str, \
                        TRI_TO_STR, TYPE_TO_STR, \
@@ -419,7 +419,7 @@ def _color_from_rgb(rgb):
     # terminal capabilities.
 
     # Calculates the Euclidean distance between two RGB colors
-    dist = lambda r1, r2: sum((x - y)**2 for x, y in zip(r1, r2))
+    def dist(r1, r2): return sum((x - y)**2 for x, y in zip(r1, r2))
 
     if curses.COLORS >= 256:
         # Assume we're dealing with xterm's 256-color extension
@@ -785,7 +785,7 @@ def _menuconfig(stdscr):
                    "h", "H"):
 
             if c == "\x1B" and _cur_menu is _kconf.top_node:
-                res = quit_dialog()
+                res = _quit_dialog()
                 if res:
                     return res
             else:
@@ -836,11 +836,11 @@ def _menuconfig(stdscr):
             _show_name = not _show_name
 
         elif c in ("q", "Q"):
-            res = quit_dialog()
+            res = _quit_dialog()
             if res:
                 return res
 
-def quit_dialog():
+def _quit_dialog():
     if not _conf_changed:
         return "No changes to save"
 
@@ -1190,7 +1190,11 @@ def _draw_main():
 
     menu = _cur_menu
     while menu is not _kconf.top_node:
-        menu_prompts.append(menu.prompt[0])
+        # Promptless choices can be entered in show-all mode. Use
+        # standard_sc_expr_str() for them, so they show up as
+        # '<choice (name if any)>'.
+        menu_prompts.append(menu.prompt[0] if menu.prompt else
+                            standard_sc_expr_str(menu.item))
         menu = _parent_menu(menu)
     menu_prompts.append("(top menu)")
     menu_prompts.reverse()
@@ -1336,7 +1340,7 @@ def _shown_nodes(menu):
         # Show the node if its prompt is visible. For menus, also check
         # 'visible if'. In show-all mode, show everything.
         return _show_all or \
-            (node.prompt and expr_value(node.prompt[1]) and not \
+            (node.prompt and expr_value(node.prompt[1]) and not
              (node.item == MENU and not expr_value(node.visibility)))
 
     if isinstance(menu.item, Choice):
@@ -1382,7 +1386,7 @@ def _change_node(node):
         s = sc.str_value
 
         while True:
-            s = _input_dialog("Value for '{}' ({})".format(
+            s = _input_dialog("{} ({})".format(
                                   node.prompt[0], TYPE_TO_STR[sc.type]),
                               s, _range_info(sc))
 
@@ -2433,14 +2437,20 @@ def _select_imply_info(sym):
             s += "\n"
 
     if sym.rev_dep is not _kconf.n:
-        add_sis(sym.rev_dep, 2, "Symbols currently y-selecting this symbol:\n")
-        add_sis(sym.rev_dep, 1, "Symbols currently m-selecting this symbol:\n")
-        add_sis(sym.rev_dep, 0, "Symbols currently n-selecting this symbol (no effect):\n")
+        add_sis(sym.rev_dep, 2,
+                "Symbols currently y-selecting this symbol:\n")
+        add_sis(sym.rev_dep, 1,
+                "Symbols currently m-selecting this symbol:\n")
+        add_sis(sym.rev_dep, 0,
+                "Symbols currently n-selecting this symbol (no effect):\n")
 
     if sym.weak_rev_dep is not _kconf.n:
-        add_sis(sym.weak_rev_dep, 2, "Symbols currently y-implying this symbol:\n")
-        add_sis(sym.weak_rev_dep, 1, "Symbols currently m-implying this symbol:\n")
-        add_sis(sym.weak_rev_dep, 0, "Symbols currently n-implying this symbol (no effect):\n")
+        add_sis(sym.weak_rev_dep, 2,
+                "Symbols currently y-implying this symbol:\n")
+        add_sis(sym.weak_rev_dep, 1,
+                "Symbols currently m-implying this symbol:\n")
+        add_sis(sym.weak_rev_dep, 0,
+                "Symbols currently n-implying this symbol (no effect):\n")
 
     return s
 
@@ -2483,7 +2493,11 @@ def _menu_path_info(node):
 
     node = _parent_menu(node)
     while node is not _kconf.top_node:
-        path = " -> " + node.prompt[0] + path
+        # Promptless choices might appear among the parents. Use
+        # standard_sc_expr_str() for them, so that they show up as
+        # '<choice (name if any)>'.
+        path = " -> " + (node.prompt[0] if node.prompt else
+                         standard_sc_expr_str(node.item)) + path
         node = _parent_menu(node)
 
     return "(top menu)" + path
@@ -2639,13 +2653,13 @@ def _node_str(node):
     # This approach gives nice alignment for empty string symbols ("()  Foo")
     s = "{:{}}".format(_value_str(node), 3 + indent)
 
-    # 'not node.prompt' can only be True in show-all mode
-    if not node.prompt or \
-       (_show_name and
-        (isinstance(node.item, Symbol) or
-         (isinstance(node.item, Choice) and node.item.name))):
-
-        s += " <{}>".format(node.item.name)
+    if _should_show_name(node):
+        if isinstance(node.item, Symbol):
+            s += " <{}>".format(node.item.name)
+        else:
+            # For choices, use standard_sc_expr_str(). That way they show up as
+            # '<choice (name if any)>'.
+            s += " " + standard_sc_expr_str(node.item)
 
     if node.prompt:
         s += " "
@@ -2680,6 +2694,15 @@ def _node_str(node):
         s += "  --->" if _shown_nodes(node) else "  ---> (empty)"
 
     return s
+
+def _should_show_name(node):
+    # Returns True if 'node' is a symbol or choice whose name should shown (if
+    # any, as names are optional for choices)
+
+    # The 'not node.prompt' case only hits in show-all mode, for promptless
+    # symbols and choices
+    return not node.prompt or \
+           (_show_name and isinstance(node.item, (Symbol, Choice)))
 
 def _value_str(node):
     # Returns the value part ("[*]", "<M>", "(foo)" etc.) of a menu node
