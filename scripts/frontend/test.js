@@ -125,12 +125,10 @@ class deviceDB {
 
 	getBoardDevice(id) {
 		return this._boards[id].devicetree.dependency[0];
-
 	}
 
 	getBoardModel(id) {
 		return this._boards[id].devicetree.model[0];
-
 	}
 
 	getBoard(id) {
@@ -147,7 +145,7 @@ class deviceDB {
 		promises.push(this._loadData("http://" + backendIp + ":5002/devices").then((result) => {
 			this._devices = result;
 		}));
-				
+
 		promises.push(this._loadData("http://" + backendIp + ":5002/boards").then((result) => {
 			this._boards = result;
 		}));
@@ -300,7 +298,7 @@ class APP {
 		this._db = db;
 		this._state = state;
 
-		boardSelect = new boardSelectDialog(this._db, this._state)
+		this.boardSelect = new boardSelectDialog(this._db, this._state)
 	}
 
 	reset() {

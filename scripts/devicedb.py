@@ -78,8 +78,7 @@ class devicedb():
 
             binding['properties']['status'] = {'type':'string','category':'required','description':'Device status'}
 
-            if 'id' in binding:
-                self.bindings[binding['id']] = binding
+            self.bindings[yamlfile.replace('.yaml','')] = binding
 
     def load_samples_db(self, root_path):
         for subdir, dirs, files in os.walk(root_path+"samples/"):
@@ -94,7 +93,7 @@ class devicedb():
                             self.samples[sample_name].update({'path':subdir})
 
     def list_nodes(self, node, db, level):
-        while node:           
+        while node:
             if node.item == MENU:
                 if node.list:
                     prompt, prompt_cond = node.prompt
