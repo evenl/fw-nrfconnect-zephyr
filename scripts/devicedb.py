@@ -30,6 +30,8 @@ class devicedb():
         self.bindings = dict()
         self.yaml_files = dict()
 
+        self.dts_includes = dict()
+
     def load_board_db(self, root_path):
         for subdir, dirs, files in os.walk(root_path+"boards/"):
             for file in files:
@@ -45,7 +47,6 @@ class devicedb():
 
 
     def load_device_db(self, root_path):
-
         for subdir, dirs, files in os.walk(root_path+"dts/"):
             for file in files:
                 device_name, file_ext = os.path.splitext(file)
@@ -139,6 +140,8 @@ class devicedb():
         self.config = config
 
     def load_db(self, root_path):
+        self.create_files_db(root_path+'dts/', '.h', self.dts_includes)
+        self.create_files_db(root_path+'include/dt-bindings/', '.h', self.dts_includes)
         self.load_device_db(root_path)
         self.load_board_db(root_path)
         self.load_binding_db(root_path)
@@ -178,6 +181,23 @@ class devicedb():
                     else:
                         self.data["config"].update({config_item[0]: config_item[1].strip().replace('"','')})
 
+    def create_files_db(self, root_path, ext, db):
+        for subdir, dirs, files in os.walk(root_path):
+            for file in files:
+                device_name, file_ext = os.path.splitext(file)
+                if file_ext == ext:
+                    db[file] = subdir+'/'+file
+
+    def load_dts_headerfile(self, filename, data):
+        with open(self.dts_includes[filename]) as f:
+            if(filename == "i2c.h"):
+               print(filename)
+            lines = f.readlines()
+            for line in lines:
+                symbol = re.split('[ \t]', line, 2)
+                if symbol[0] == '#define' and len(symbol) > 2:
+                   data[symbol[1].strip()] = symbol[2].strip()
+
     def parse_dts_file(self, file, data):
         for dtsline in file:
             if dtsline.startswith("#include"):
@@ -185,6 +205,12 @@ class devicedb():
                 if include != None and include.group(1).endswith(".dtsi"):
                   include = include.group(1).split('/')
                   data['devicetree']['dependency'].append(include[len(include)-1].replace('.dtsi',''))
+                elif include != None and include.group(1).endswith(".h"):
+                  if 'symbols' not in data:
+                      data['symbols'] = dict()
+                  symbol_file = include.group(1).split('/')
+                  symbol_file = symbol_file[len(symbol_file)-1]
+                  self.load_dts_headerfile(symbol_file, data['symbols'])
 
             if dtsline.startswith("/ {"):
                 self.parse_dts_file(file, data["devicetree"])
@@ -211,7 +237,7 @@ class devicedb():
                         continue
 
                     new_key = line_array[0].split(" ")[0].strip()
-    
+
                     if new_key not in data.keys():
                         data[new_key] = {}
 
