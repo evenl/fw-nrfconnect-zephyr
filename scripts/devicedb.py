@@ -142,11 +142,12 @@ class devicedb():
     def load_db(self, root_path):
         self.create_files_db(root_path+'dts/', '.h', self.dts_includes)
         self.create_files_db(root_path+'include/dt-bindings/', '.h', self.dts_includes)
+
         self.load_device_db(root_path)
         self.load_board_db(root_path)
         self.load_binding_db(root_path)
         self.load_samples_db(root_path)
-        self.load_kconfig_db(root_path)
+#        self.load_kconfig_db(root_path)
 
     def get_boards(self):
         return self.boards
@@ -190,13 +191,27 @@ class devicedb():
 
     def load_dts_headerfile(self, filename, data):
         with open(self.dts_includes[filename]) as f:
-            if(filename == "i2c.h"):
-               print(filename)
             lines = f.readlines()
             for line in lines:
                 symbol = re.split('[ \t]', line, 2)
                 if symbol[0] == '#define' and len(symbol) > 2:
-                   data[symbol[1].strip()] = symbol[2].strip()
+                   result = ""
+
+                   try:
+                      result = eval(symbol[2].strip())
+                   except:
+                      for k,v in data.items():
+                         if str(k) in symbol[2]:
+                             try:
+                                 result = eval(symbol[2].replace(str(k), str(v)))
+                             except:
+                                 result = ""
+                             break
+
+                      if result == "":
+                         result = symbol[2].strip()
+
+                   data[symbol[1].strip()] = result
 
     def parse_dts_file(self, file, data):
         for dtsline in file:
