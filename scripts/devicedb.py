@@ -196,6 +196,7 @@ class devicedb():
                 symbol = re.split('[ \t]', line, 2)
                 if symbol[0] == '#define' and len(symbol) > 2:
                    result = ""
+                   symbol[2] = symbol[2].split("/*")[0]
 
                    try:
                       result = eval(symbol[2].strip())
