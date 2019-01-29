@@ -199,20 +199,17 @@ class devicedb():
                    symbol[2] = symbol[2].split("/*")[0]
 
                    try:
-                      result = eval(symbol[2].strip())
+                      data[symbol[1].strip()] = eval(symbol[2].strip())
                    except:
+                      result = symbol[2]
                       for k,v in data.items():
-                         if str(k) in symbol[2]:
-                             try:
-                                 result = eval(symbol[2].replace(str(k), str(v)))
-                             except:
-                                 result = ""
-                             break
+                         if str(k) in str(result):
+                             result = result.replace(str(k), str(v))
 
-                      if result == "":
-                         result = symbol[2].strip()
-
-                   data[symbol[1].strip()] = result
+                      try:
+                          data[symbol[1].strip()] = eval(result)
+                      except:
+                          data[symbol[1].strip()] = result.strip()
 
     def parse_dts_file(self, file, data):
         for dtsline in file:
