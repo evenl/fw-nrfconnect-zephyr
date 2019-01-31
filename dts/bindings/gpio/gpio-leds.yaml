@@ -29,4 +29,43 @@ properties:
       description: Human readable string describing the device (used by Zephyr for API name)
       generation: define
 
+
+define:
+      gpios:
+          controller:
+             type: 
+          pin:
+             type: int
+             minval: 0
+             maxval: 31
+          flags:
+             type: complex
+             elements:
+                gpio_direction:
+                   type: enum
+                   values:
+                      - GPIO_DIR_IN
+                      - GPIO_DIR_OUT
+                gpio_interrupt:
+                   type: enum
+                   values:
+                      - GPIO_INT_ACTIVE_LOW
+                      - GPIO_INT_ACTIVE_HIGH
+                      - GPIO_INT_DEBOUNCE
+                      - GPIO_INT_LEVEL
+                      - GPIO_INT_EDGE
+                      - GPIO_INT_DOUBLE_EDGE
+                gpio_polarity:
+                   type: enum
+                   values:
+                      - GPIO_POL_NORMAL
+                      - GPIO_POL_INV
+                      - GPIO_POL_MASK
+                gpio_pull:
+                   type: enum
+                   values:
+                      - GPIO_PUD_NORMAL
+                      - GPIO_PULL_UP
+                      - GPIO_PULL_DOWN
+
 ...

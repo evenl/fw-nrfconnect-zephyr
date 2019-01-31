@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"/>
+
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Test page</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Dosis:400,700" rel="stylesheet"/>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Style the header */
+header {
+    background-color: #666;
+    padding: 30px;
+    text-align: center;
+    font-size: 35px;
+    color: white;
+}
+
+/* Create two columns/boxes that floats next to each other */
+nav {
+    float: left;
+    width: 30%;
+    height: 300px; /* only for demonstration, should be removed */
+    background: #ccc;
+    padding: 20px;
+}
+
+/* Style the list inside the menu */
+nav ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+article {
+    float: left;
+    padding: 20px;
+    width: 70%;
+    background-color: #f1f1f1;
+}
+
+/* Clear floats after the columns */
+section:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Style the footer */
+footer {
+    background-color: #777;
+    padding: 10px;
+    text-align: center;
+    color: white;
+}
+
+/* Responsive layout - makes the two columns/boxes stack on top of each other instead of next to each other, on small screens */
+@media (max-width: 600px) {
+    nav, article {
+        width: 100%;
+        height: auto;
+    }
+}
+
+.modal {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(1.1);
+    transition: visibility 0s linear 0.25s, opacity 0.25s 0s, transform 0.25s;
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 1rem 1.5rem;
+    width: 24rem;
+    border-radius: 0.5rem;
+}
+
+.close-button {
+    float: right;
+    width: 1.5rem;
+    line-height: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    background-color: lightgray;
+}
+
+.close-button:hover {
+    background-color: darkgray;
+}
+
+.show-modal {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1.0);
+    transition: visibility 0s linear 0s, opacity 0.25s 0s, transform 0.25s;
+}
+
+</style>
+
+<script src="./template7/template7.min.js"></script>
+<script src="./test2.js"></script>
+
+<script>
+  var gui = null;
+  var db = null;
+  var confstate = null;
+	
+  window.onload = function () {
+    console.log("Window loaded");
+
+    db = new deviceDB();
+
+    Promise.all(db.loadDBs()).then(() => {
+      confstate = new state(db);
+      app = new APP(db, confstate);
+      app.reset();
+      app.populateBoardList();
+    }).catch((err) => {
+      console.log("Not able to get all databases!");
+    });
+  }
+</script>
+
+</head>
+
+<body>
+    <section>
+      <nav>
+        <select id="boardListElement" onchange="app.showBoardInfo();" size="10"> 
+        </select>
+      </nav>
+
+      <article>
+	<table border="1">
+	  <tr align="left">
+            <th>ID:</th>
+	    <td><div id="boardIdElement"></div></td>
+          </tr>
+	  <tr>
+            <th>Description:</th>
+	    <td><div id="boardInfoElement"></div></td>
+          </tr>
+	  <tr valign="top" align="left">
+	    <th>Device</th>
+	    <td><div id="boardDeviceElement"></div></td>
+	  </tr>
+
+	  <tr>
+	    <th>LEDs:</th>
+	    <td><table id="ledTableElement"></table></td>
+	  </tr>
+	</table>
+      </article>
+
+      <textarea id="output" rows="40" cols="80" />
+
+    </section>
+
+</body>
+</html>
+
